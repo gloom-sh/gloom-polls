@@ -1,7 +1,7 @@
 {
   "id": "polls",
   "name": "Polls",
-  "icon": "icon.svg",
+  "icon": "icon.webp",
   "tagline": "Political polls from VoteHub",
   "description": "Browse VoteHub political polls by type: approval, favorability, generic ballot, Senate, governor, and House. Trend charts, pollster breakdowns, search, and links to each source. Data is CC BY 4.0 from VoteHub.",
   "categories": [
