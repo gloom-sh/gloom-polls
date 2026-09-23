@@ -5,10 +5,11 @@ import { isPlainArrowUp, stopSearchFocusNavigation } from "gloomberb/utils";
 import {
   DataTableStackView,
   EmptyState,
-  InputSearchBar,
   PaneStatusBody,
+  QueryBar,
   Tabs,
   usePaneFooter,
+  usePaneHeaderTabs,
   type DataTableCell,
   type DataTableColumn,
   type DataTableKeyEvent,
@@ -622,37 +623,42 @@ export function PollsPane({ focused, width, height }: PaneProps) {
         ],
   }), [error, detailOpen, focusSearch, openSelected, selected?.url, status, updatedAgo]);
 
-  const tabs = (
+  const selectTab = (value: string) => {
+    setTab(value as PollTabId);
+    setDetailOpen(false);
+    setSearchQuery("");
+  };
+  const tabsFocused = focused && !detailOpen && !searchFocused;
+  const tabsInHeader = usePaneHeaderTabs({ tabs: TABS, activeValue: tab, onSelect: selectTab, focused: tabsFocused });
+  const tabsHeight = tabsInHeader ? 0 : 1;
+
+  const tabs = tabsInHeader ? null : (
     <Box height={1} flexShrink={0} overflow="hidden">
       <Tabs
         tabs={TABS}
         activeValue={tab}
-        onSelect={(value) => {
-          setTab(value as PollTabId);
-          setDetailOpen(false);
-          setSearchQuery("");
-        }}
+        onSelect={selectTab}
         compact
         variant="bare"
-        focused={focused && !detailOpen && !searchFocused}
+        focused={tabsFocused}
       />
     </Box>
   );
 
   const searchBar = (
-    <InputSearchBar
-      value={searchQuery}
-      focused={focused && !detailOpen}
-      active={searchFocused}
+    <QueryBar
       width={width}
-      focusToken={searchFocusToken}
-      inputRef={searchInputRef}
-      placeholder="subject or pollster"
-      debounceMs={80}
-      onFocus={focusSearch}
-      onBlur={blurSearch}
-      onNavigateDown={blurSearch}
-      onQueryChange={setSearchQuery}
+      search={{
+        value: searchQuery,
+        onChange: setSearchQuery,
+        placeholder: "subject or pollster",
+        focused: focused && !detailOpen,
+        active: searchFocused,
+        onActiveChange: (active) => (active ? setSearchFocused(true) : blurSearch()),
+        focusToken: searchFocusToken,
+        inputRef: searchInputRef,
+        debounceMs: 80,
+      }}
     />
   );
 
@@ -678,7 +684,7 @@ export function PollsPane({ focused, width, height }: PaneProps) {
               poll={selected}
               allRows={allRows}
               width={width}
-              height={Math.max(height - 1, 1)}
+              height={Math.max(height - tabsHeight, 1)}
               detailTab={detailTab}
               onDetailTabChange={setDetailTab}
             />
@@ -699,7 +705,7 @@ export function PollsPane({ focused, width, height }: PaneProps) {
           setDetailOpen(true);
         }}
         rootWidth={width}
-        rootHeight={Math.max(1, height - 1)}
+        rootHeight={Math.max(1, height - tabsHeight)}
         columns={columns}
         items={rows}
         sortColumnId={sortPreference.columnId}
