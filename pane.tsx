@@ -337,11 +337,13 @@ function PollTrend({
     panelId: "pct",
   });
 
+  // The average takes the leading answer's tone, as the pollster bars do, so a
+  // disapproval trend does not read as good news.
   const maSeries = maPoints.length > 0
     ? pricePointsToResolvedSeries(maPoints, {
         id: "ma",
         label: `${TREND_WINDOW}-poll avg`,
-        color: colors.positive,
+        color: answerChoiceColor(leadingChoice) ?? colors.positive,
         unit: "%",
         unitGroup: "percent",
         style: "line",
