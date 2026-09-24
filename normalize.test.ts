@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { parseVoteHubPollsPayload } from "./client";
 import {
+  choiceTone,
   computeMarginOfError,
   computeMovingAverage,
   computePollAverages,
@@ -54,8 +55,32 @@ describe("VoteHub normalize", () => {
     ]);
     expect(summary.leadChoice).toBe("Disapprove");
     expect(summary.lead).toBeCloseTo(7);
-    expect(summary.result).toContain("Disapprove");
-    expect(summary.result).toContain("Approve");
+    expect(summary.result).toBe("Disapprove 51 · Approve 44");
+  });
+
+  test("names candidates by surname so both names and numbers fit", () => {
+    const race = (answers: VoteHubPoll["answers"]) => summarizeAnswers(answers, "us-senator").result;
+    expect(race([{ choice: "Abdul El-Sayed", pct: 47 }, { choice: "Mike Rogers", pct: 40 }]))
+      .toBe("El-Sayed 47 · Rogers 40");
+    expect(race([{ choice: "Nick Begich III", pct: 48 }, { choice: "Mary Peltola", pct: 46.5 }]))
+      .toBe("Begich 48 · Peltola 46.5");
+    // A shared surname falls back to full names rather than two identical labels.
+    expect(race([{ choice: "Nick Begich", pct: 30 }, { choice: "Tom Begich", pct: 20 }]))
+      .toBe("Nick Begich 30 · Tom Begich 20");
+    // Positions keep the whole word; anything too long ends in an ellipsis.
+    expect(summarizeAnswers([{ choice: "Unfavorable", pct: 55 }, { choice: "Favorable", pct: 40 }], "favorability").result)
+      .toBe("Unfavorable 55 · Favorable 40");
+    expect(summarizeAnswers([{ choice: "Somewhat disapprove strongly", pct: 30 }], "approval").result)
+      .toBe("Somewhat disa… 30");
+  });
+
+  test("reads favorable and unfavorable as positive and negative", () => {
+    expect(choiceTone("Favorable")).toBe("positive");
+    expect(choiceTone("Unfavorable")).toBe("negative");
+    expect(choiceTone("Disapprove")).toBe("negative");
+    expect(choiceTone("Approve")).toBe("positive");
+    expect(choiceTone("Not Sure")).toBeNull();
+    expect(choiceTone("Mike Rogers")).toBeNull();
   });
 
   test("maps wire fields onto list rows including margin of error", () => {

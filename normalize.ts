@@ -69,7 +69,7 @@ function sortedAnswers(answers: VoteHubPollAnswer[] | undefined): VoteHubPollAns
     .sort((left, right) => right.pct - left.pct);
 }
 
-export function summarizeAnswers(answers: VoteHubPollAnswer[] | undefined): {
+export function summarizeAnswers(answers: VoteHubPollAnswer[] | undefined, pollType = ""): {
   result: string;
   lead: number | null;
   leadChoice: string | null;
@@ -80,23 +80,73 @@ export function summarizeAnswers(answers: VoteHubPollAnswer[] | undefined): {
   if (!first) return { result: "—", lead: null, leadChoice: null };
   if (!second) {
     return {
-      result: `${shortChoice(first.choice)} ${formatPct(first.pct)}`,
+      result: `${shortChoice(first.choice, pollType)} ${formatPct(first.pct)}`,
       lead: first.pct,
       leadChoice: first.choice,
     };
   }
+  let firstLabel = shortChoice(first.choice, pollType);
+  let secondLabel = shortChoice(second.choice, pollType);
+  if (firstLabel === secondLabel) {
+    firstLabel = clipText(first.choice.trim(), MAX_CHOICE_CHARS);
+    secondLabel = clipText(second.choice.trim(), MAX_CHOICE_CHARS);
+  }
   const lead = first.pct - second.pct;
   return {
-    result: `${shortChoice(first.choice)} ${formatPct(first.pct)}  ${shortChoice(second.choice)} ${formatPct(second.pct)}`,
+    result: `${firstLabel} ${formatPct(first.pct)} · ${secondLabel} ${formatPct(second.pct)}`,
     lead,
     leadChoice: first.choice,
   };
 }
 
-function shortChoice(choice: string): string {
+/** Races between people; the other poll types answer with a position or a party. */
+const CANDIDATE_POLL_TYPES = new Set([
+  "us-senator",
+  "governor",
+  "us-representative",
+  "mayor",
+  "attorney-general",
+  "presidential-primary",
+]);
+const NAME_SUFFIXES = new Set(["jr", "sr", "ii", "iii", "iv"]);
+const MAX_CHOICE_CHARS = 14;
+
+/**
+ * The label a list row gives an answer. Candidates go by surname so both
+ * names and both numbers fit ("El-Sayed 47 · Rogers 40"); the detail keeps
+ * full names. Anything still too long ends in an ellipsis, never a silent cut
+ * that reads as another name.
+ */
+export function shortChoice(choice: string, pollType = ""): string {
   const trimmed = choice.trim();
-  if (trimmed.length <= 10) return trimmed;
-  return trimmed.slice(0, 9);
+  return clipText(CANDIDATE_POLL_TYPES.has(pollType) ? surname(trimmed) : trimmed, MAX_CHOICE_CHARS);
+}
+
+function surname(name: string): string {
+  const words = name.split(/\s+/).filter(Boolean);
+  while (words.length > 1 && NAME_SUFFIXES.has(words[words.length - 1]!.toLowerCase().replace(/[.,]/g, ""))) {
+    words.pop();
+  }
+  return words[words.length - 1] ?? name;
+}
+
+export function clipText(text: string, width: number): string {
+  if (width <= 0) return "";
+  if (text.length <= width) return text;
+  return `${text.slice(0, Math.max(0, width - 1)).trimEnd()}…`;
+}
+
+/**
+ * Semantic tone of an answer label: approve/yes/favorable read positive,
+ * disapprove/no/unfavorable negative, candidates and parties neutral. A
+ * leading "approve" at 40% is still positive, so this goes by the label, not
+ * the number.
+ */
+export function choiceTone(choice: string): "positive" | "negative" | null {
+  const normalized = choice.trim().toLowerCase();
+  if (/\b(disapprove|no|oppose|against|negative|unfavou?r(able)?)\b/.test(normalized)) return "negative";
+  if (/\b(approve|yes|favou?r(able)?|support|positive)\b/.test(normalized)) return "positive";
+  return null;
 }
 
 function formatPct(value: number): string {
@@ -104,7 +154,7 @@ function formatPct(value: number): string {
 }
 
 export function normalizeVoteHubPoll(poll: VoteHubPoll): PollRow {
-  const summary = summarizeAnswers(poll.answers);
+  const summary = summarizeAnswers(poll.answers, poll.poll_type);
   const sampleSize = parseSampleSize(poll.sample_size);
   return {
     id: poll.id,

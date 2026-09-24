@@ -14,7 +14,9 @@ Open `POLL` in the command bar. Also in the hosted web app at term.gloom.sh, whe
 
 ## Usage
 
-`h`/`l` or the arrow keys switch the poll type. Type to search; arrow keys move between the search field and the list. Select a poll for the pollster breakdown and trend chart. `o` opens the source, `r` refreshes.
+The poll types are tabs in the pane title bar (a tab row in the terminal); `h`/`l` or the arrow keys switch them. `/` searches subjects and pollsters; arrow keys move between the search field and the list. The result column shows the top two answers, candidates by surname, tinted by what leads (disapproval red, approval green).
+
+Enter opens a poll: when and by whom it was fielded, sample, margin of error, this poll against the recent weighted average, a trend chart of the leading answer, and each pollster's average of it. `h`/`l` switch between those views. `o` opens the source, `r` refreshes.
 
 ## Data
 
