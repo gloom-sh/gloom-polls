@@ -20,6 +20,13 @@
   "contributes": {
     "panes": [
       "polls"
+    ],
+    "shortcuts": [
+      {
+        "code": "POLL",
+        "name": "Polls",
+        "description": "Political polls by race, with trend charts and pollster breakdowns."
+      }
     ]
   },
   "minGloom": "0.15.0"
