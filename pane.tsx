@@ -388,7 +388,7 @@ function createPollsterColumns(width: number, pollsters: PollsterAverage[], choi
   const room = width - 2 - (avgWidth + 1) - (sampleWidth + 1) - (countWidth + 1) - (barWidth + 1) - 2;
   const pollsterWidth = Math.max(12, Math.min(32, room, longest(pollsters.map((entry) => entry.pollster))));
   return [
-    { id: "pollster", label: "POLLSTER", width: pollsterWidth, align: "left" },
+    { id: "pollster", label: "POLLSTER", width: pollsterWidth, minWidth: 12, align: "left" },
     { id: "avg", label: choiceLabel, width: avgWidth, align: "right" },
     { id: "sample", label: "SAMPLE", width: sampleWidth, align: "right" },
     { id: "count", label: "POLLS", width: countWidth, align: "right" },
