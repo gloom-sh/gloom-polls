@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, ScrollBox, Text, TextAttributes, useUiCapabilities, type InputRenderable } from "gloomberb/ui";
 import { usePluginPaneState, useShortcut } from "gloomberb/react";
 import { isPlainArrowUp, stopSearchFocusNavigation } from "gloomberb/utils";
+import * as Components from "gloomberb/components";
 import {
   DataTableStackView,
   DataTableView,
@@ -48,6 +49,11 @@ import {
   type PollSortPreference,
 } from "./normalize";
 import type { PollDetailTab, PollRow, PollsterAverage, PollTabId } from "./types";
+
+// Resolve once so older hosts keep a stable hook order and their existing layout behavior.
+const useTableLayoutWidth = (Components as typeof Components & {
+  useTableLayoutWidth?: (width: number) => number;
+}).useTableLayoutWidth ?? ((width: number) => width);
 
 type LoadStatus = "loading" | "loaded" | "error";
 
@@ -403,6 +409,7 @@ function PollPollsters({
   height: number;
   focused: boolean;
 }) {
+  const layoutWidth = useTableLayoutWidth(width);
   const leadingChoice = poll.leadChoice ?? poll.answers[0]?.choice ?? null;
   const pollsters = useMemo(
     () => computePollsterAverages(allRows, poll.subject, leadingChoice),
@@ -411,8 +418,8 @@ function PollPollsters({
   // The average is of the leading answer; its name heads the column.
   const choiceLabel = leadingChoice ? shortChoice(leadingChoice, poll.pollType) : "Avg";
   const columns = useMemo(
-    () => createPollsterColumns(width, pollsters, choiceLabel),
-    [choiceLabel, pollsters, width],
+    () => createPollsterColumns(layoutWidth, pollsters, choiceLabel),
+    [choiceLabel, pollsters, layoutWidth],
   );
   const maxAvg = Math.max(...pollsters.map((p) => p.avgPct), 1);
   const barColor = (leadingChoice ? answerChoiceColor(leadingChoice) : undefined) ?? colors.positive;
@@ -512,6 +519,7 @@ function PollDetail({
 }
 
 export function PollsPane({ focused, width, height }: PaneProps) {
+  const layoutWidth = useTableLayoutWidth(width);
   const [storedTab, setTab] = usePluginPaneState<PollTabId>("tab", "approval");
   const tab: PollTabId = isPollTab(storedTab) ? storedTab : "approval";
   const [rowsByTab, setRowsByTab] = useState<Partial<Record<PollTabId, PollRow[]>>>({});
@@ -665,7 +673,7 @@ export function PollsPane({ focused, width, height }: PaneProps) {
     return false;
   }, [load, selected?.url, tab]);
 
-  const columns = useMemo(() => createColumns(width, allRows), [allRows, width]);
+  const columns = useMemo(() => createColumns(layoutWidth, allRows), [allRows, layoutWidth]);
   const updatedAgo = useUpdatedAgo(status === "loaded" ? lastUpdated : null);
   const renderCell = useCallback(
     (row: PollRow, column: PollColumn, _index: number, rowState: { selected: boolean }) =>
